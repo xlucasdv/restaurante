@@ -1,0 +1,138 @@
+openapi: 3.0.3
+info:
+  title: Food Network API
+  version: 1.0.0
+  description: Back-end para gestão de pedidos multicanal, estoque, fidelidade e pagamento mock.
+servers:
+  - url: http://localhost:3000
+    description: Servidor local de desenvolvimento
+paths:
+  /auth/login:
+    post:
+      summary: Autenticação e geração de token JWT
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, senha]
+              properties:
+                email: { type: string, format: email }
+                senha: { type: string, minLength: 6 }
+      responses:
+        '200':
+          description: Token gerado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: { type: string }
+                  refreshToken: { type: string }
+                  expiresIn: { type: number }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+  /pedidos:
+    post:
+      summary: Criar novo pedido
+      tags: [Pedidos]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [canalPedido, unidadeId, itens]
+              properties:
+                canalPedido: { $ref: '#/components/schemas/CanalPedido' }
+                unidadeId: { type: integer }
+                itens:
+                  type: array
+                  items:
+                    type: object
+                    required: [produtoId, quantidade]
+                    properties:
+                      produtoId: { type: integer }
+                      quantidade: { type: integer, minimum: 1 }
+      responses:
+        '201':
+          description: Pedido criado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  status: { type: string }
+                  valorTotal: { type: number }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409': { $ref: '#/components/responses/ConflictError' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+    get:
+      summary: Listar pedidos com filtros
+      tags: [Pedidos]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: canalPedido
+          schema: { $ref: '#/components/schemas/CanalPedido' }
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: Lista de pedidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array }
+                  meta: { type: object }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    CanalPedido:
+      type: string
+      enum: [APP, TOTEM, BALCAO, PICKUP, WEB]
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: { type: object, nullable: true }
+  responses:
+    UnauthorizedError:
+      description: Não autenticado
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    ValidationError:
+      description: Dados inválidos
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    ConflictError:
+      description: Conflito
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+    UnprocessableEntity:
+      description: Regra de negócio falhou
+      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }

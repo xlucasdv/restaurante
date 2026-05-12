@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+enum Perfil {
+  CLIENTE
+  ATENDENTE
+  COZINHA
+  GERENTE
+}
+
+enum CanalPedido {
+  APP
+  TOTEM
+  BALCAO
+  PICKUP
+  WEB
+}
+
+enum StatusPedido {
+  AGUARDANDO_PAGAMENTO
+  PAGO
+  PREPARANDO
+  PRONTO
+  ENTREGUE
+  CANCELADO
+}
+
+enum StatusPagamento {
+  PENDENTE
+  APROVADO
+  RECUSADO
+}
+
+model Usuario {
+  id          String       @id @default(uuid())
+  nome        String
+  email       String       @unique
+  senhaHash   String
+  perfil      Perfil       @default(CLIENTE)
+  ativo       Boolean      @default(true)
+  criadoEm    DateTime     @default(now())
+  pedidos     Pedido[]
+  logs        LogAuditoria[]
+  fidelidade  Fidelidade?
+
+  @@map("usuarios")
+}
+
+model Unidade {
+  id       String    @id @default(uuid())
+  nome     String
+  endereco String
+  ativo    Boolean   @default(true)
+  produtos Produto[]
+  pedidos  Pedido[]
+
+  @@map("unidades")
+}
+
+model Produto {
+  id        String   @id @default(uuid())
+  unidadeId String
+  unidade   Unidade  @relation(fields: [unidadeId], references: [id])
+  nome      String
+  preco     Float
+  estoque   Estoque?
+  itens     ItemPedido[]
+
+  @@map("produtos")
+}
+
+model Estoque {
+  id        String  @id @default(uuid())
+  produtoId String  @unique
+  produto   Produto @relation(fields: [produtoId], references: [id])
+  qtdAtual  Int     @default(0)
+
+  @@map("estoques")
+}
+
+model Pedido {
+  id              String         @id @default(uuid())
+  clienteId       String
+  cliente         Usuario        @relation(fields: [clienteId], references: [id])
+  unidadeId       String
+  unidade         Unidade        @relation(fields: [unidadeId], references: [id])
+  canalPedido     CanalPedido
+  status          StatusPedido   @default(AGUARDANDO_PAGAMENTO)
+  valorTotal      Float          @default(0)
+  idempotenciaKey String?        @unique
+  criadoEm        DateTime       @default(now())
+  itens           ItemPedido[]
+  pagamento       Pagamento?
+
+  @@index([canalPedido])
+  @@index([status])
+  @@map("pedidos")
+}
+
+model ItemPedido {
+  id            String  @id @default(uuid())
+  pedidoId      String
+  pedido        Pedido  @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  produtoId     String
+  produto       Produto @relation(fields: [produtoId], references: [id])
+  quantidade    Int
+  precoUnitario Float
+
+  @@map("itens_pedido")
+}
+
+model Pagamento {
+  id          String          @id @default(uuid())
+  pedidoId    String          @unique
+  pedido      Pedido          @relation(fields: [pedidoId], references: [id])
+  gatewayRef  String?
+  status      StatusPagamento @default(PENDENTE)
+  payload     Json?
+  criadoEm    DateTime        @default(now())
+
+  @@map("pagamentos")
+}
+
+model Fidelidade {
+  id            String   @id @default(uuid())
+  clienteId     String   @unique
+  cliente       Usuario  @relation(fields: [clienteId], references: [id])
+  pontos        Int      @default(0)
+  consentimento Boolean  @default(false)
+  atualizadoEm  DateTime @updatedAt
+
+  @@map("fidelidade")
+}
+
+model LogAuditoria {
+  id         String   @id @default(uuid())
+  usuarioId  String?
+  usuario    Usuario? @relation(fields: [usuarioId], references: [id])
+  acao       String
+  entidade   String
+  entidadeId String
+  detalhes   Json?
+  criadoEm   DateTime @default(now())
+
+  @@map("logs_auditoria")
+}

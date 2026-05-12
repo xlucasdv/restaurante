@@ -1,0 +1,26 @@
+﻿# Dependências
+node_modules/
+npm-debug.log*
+
+# Ambiente e secrets
+.env
+.env.local
+.env.*.local
+
+# Build e output
+dist/
+build/
+*.log
+
+# Banco de dados SQLite
+prisma/dev.db
+
+# IDE e configurações locais
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
