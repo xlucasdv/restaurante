@@ -26,7 +26,7 @@ export const pedidoController = {
       }
 
       // Verifica unidade
-      const unidade = await prisma.unidade.findUnique({ where: { id: unidadeId, ativo: true } });
+      const unidade = await prisma.unidade.findUnique({ where: { id: String(unidadeId), ativo: true } });
       if (!unidade) {
         return res.status(404).json({ error: { code: 'UNIDADE_NAO_ENCONTRADA', message: 'Unidade inválida ou inativa' } });
       }
@@ -35,7 +35,7 @@ export const pedidoController = {
       const itensCriados = [];
 
       for (const item of itens) {
-        const produto = await prisma.produto.findFirst({ where: { id: item.produtoId, unidadeId } });
+        const produto = await prisma.produto.findFirst({ where: { id: String(item.produtoId), unidadeId: String(unidadeId) } });
         if (!produto) {
           return res.status(404).json({ error: { code: 'PRODUTO_NAO_ENCONTRADO', message: `Produto ${item.produtoId} não existe na unidade` } });
         }
@@ -58,7 +58,7 @@ export const pedidoController = {
       // Cria pedido
       const pedido = await prisma.pedido.create({
         data: {
-          clienteId, unidadeId, canalPedido, valorTotal, idempotenciaKey,
+          clienteId, unidadeId: String(unidadeId), canalPedido, valorTotal, idempotenciaKey,
           itens: { create: itensCriados }
         },
         include: { itens: { include: { produto: true } } }
@@ -82,14 +82,14 @@ export const pedidoController = {
     }
   },
 
-    async listar(req: Request, res: Response) {
+  async listar(req: Request, res: Response) {
     try {
       const { canalPedido, status, page = '1', limit = '20' } = req.query;
       const skip = (Number(page) - 1) * Number(limit);
       const where: any = {};
       
-      if (canalPedido) where.canalPedido = canalPedido;
-      if (status) where.status = status;
+      if (canalPedido) where.canalPedido = String(canalPedido);
+      if (status) where.status = String(status);
       if (req.user?.perfil === 'CLIENTE') where.clienteId = req.user.id;
 
       const [data, total] = await Promise.all([
@@ -121,20 +121,24 @@ export const pedidoController = {
   },
 
   async buscar(req: Request, res: Response) {
-    const { id } = req.params;
-    const pedido = await prisma.pedido.findUnique({
-      where: { id },
-      include: { itens: { include: { produto: true } }, pagamento: true }
-    });
-    if (!pedido) {
-      return res.status(404).json({ error: { code: 'NAO_ENCONTRADO', message: 'Pedido não encontrado' } });
+    try {
+      const id = String(req.params.id);
+      const pedido = await prisma.pedido.findUnique({
+        where: { id },
+        include: { itens: { include: { produto: true } }, pagamento: true }
+      });
+      if (!pedido) {
+        return res.status(404).json({ error: { code: 'NAO_ENCONTRADO', message: 'Pedido não encontrado' } });
+      }
+      return res.status(200).json(pedido);
+    } catch (err: any) {
+      return res.status(500).json({ error: { code: 'ERRO_INTERNO', message: err.message } });
     }
-    return res.status(200).json(pedido);
   },
 
   async atualizarStatus(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = String(req.params.id);
       const { status } = req.body;
       const validos = ['PREPARANDO', 'PRONTO', 'ENTREGUE', 'CANCELADO'];
       
@@ -166,7 +170,9 @@ export const pedidoController = {
 
   async pagar(req: Request, res: Response) {
     try {
-      const { pedidoId, simularStatus } = req.body;
+      const pedidoId = String(req.body.pedidoId);
+      const { simularStatus } = req.body;
+      
       if (!['APROVADO', 'RECUSADO'].includes(simularStatus)) {
         return res.status(400).json({ error: { code: 'PARAMETRO_INVALIDO', message: 'simularStatus deve ser APROVADO ou RECUSADO' } });
       }
