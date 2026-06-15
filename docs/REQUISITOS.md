@@ -267,3 +267,44 @@ Basta substituir `paymentMockGateway` por implementação real.
 ## 8. Fluxo Principal (MVP Obrigatório)
 
 ### 8.1 Fluxo A: Pedido → Pagamento → Status
+
+---
+
+## 9. Métricas de Sucesso
+
+### 9.1 Técnicas
+- ✅ API rodando e acessível
+- ✅ Todos os endpoints documentados no Swagger
+- ✅ Coleção Postman com 17 cenários de teste
+- ✅ 10+ commits com evolução clara
+- ✅ README completo e reprodutível
+
+### 9.2 Funcionais
+- ✅ Fluxo principal fechado (pedido → pagamento → status)
+- ✅ Multicanalidade implementada
+- ✅ LGPD aplicado (mínimo)
+- ✅ Pagamento mock funcional
+- ✅ Persistência real em banco (SQLite)
+
+### 9.3 Segurança
+- ✅ Autenticação JWT
+- ✅ Autorização por perfis
+- ✅ Senhas com hash bcrypt
+- ✅ Dados sensíveis protegidos
+- ✅ Logs de auditoria
+
+---
+
+## 10. Links e Referências
+
+- **Repositório:** https://github.com/xlucasdv/restaurante
+- **Swagger:** http://localhost:3000/api-docs
+- **Coleção Postman:** `tests/restaurante-api.postman_collection.json`
+- **DER:** `docs/diagramas/DER.png`
+- **OpenAPI:** `openapi.yaml`
+
+---
+
+**Documento elaborado em: 15 de junho de 2026**  
+**Autor: Lucas**  
+**Disciplina: Projeto Multidisciplinar - Trilha Back-End**
