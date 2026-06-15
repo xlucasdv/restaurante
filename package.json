@@ -4,13 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-  "dev": "ts-node --transpile-only --ignore-diagnostics 5107 src/main.ts",
-  "build": "tsc --skipLibCheck",
-  "start": "node dist/main.js",
-  "db:push": "prisma db push",
-  "db:generate": "prisma generate",
-  "db:seed": "ts-node --ignore-diagnostics 5107 prisma/seed.ts"
-},
+    "dev": "ts-node --transpile-only --ignore-diagnostics 5107 src/main.ts",
+    "build": "tsc --skipLibCheck",
+    "start": "node dist/main.js",
+    "db:push": "prisma db push",
+    "db:generate": "prisma generate",
+    "db:seed": "ts-node --ignore-diagnostics 5107 prisma/seed.ts"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -25,7 +25,9 @@
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.20.0",
     "prisma": "^6.19.3",
+    "swagger-ui-express": "^5.0.1",
     "uuid": "^14.0.0",
+    "yamljs": "^0.3.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -35,7 +37,9 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.6.2",
     "@types/pg": "^8.20.0",
+    "@types/swagger-ui-express": "^4.1.8",
     "@types/uuid": "^10.0.0",
+    "@types/yamljs": "^0.2.34",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^6.0.3"

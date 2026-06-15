@@ -1,108 +1,59 @@
 openapi: 3.0.3
 info:
-  title: Food Network API
+  title: Restaurante API
+  description: |
+    API REST para sistema de gestão de rede de restaurantes.
+    
+    ## Funcionalidades
+    - Gestão de múltiplas unidades (filiais)
+    - Cardápio por unidade
+    - Pedidos multicanal (APP, TOTEM, BALCAO, PICKUP, WEB)
+    - Controle de estoque
+    - Pagamento mock (simulação)
+    - Programa de fidelidade
+    - Autenticação JWT com perfis (CLIENTE, GERENTE, COZINHA, ATENDENTE)
+    - Logs de auditoria
+    
+    ## Perfis de Acesso
+    - **CLIENTE**: Pode criar pedidos e consultar seus próprios pedidos
+    - **GERENTE**: Acesso total (produtos, pedidos, pagamentos, relatórios)
+    - **COZINHA**: Pode atualizar status dos pedidos
+    - **ATENDENTE**: Pode processar pagamentos
+    
+    ## Multicanalidade
+    Todos os pedidos registram o canal de origem (canalPedido):
+    - APP: Aplicativo mobile
+    - WEB: Site/web
+    - TOTEM: Totem de autoatendimento
+    - BALCAO: Pedido no balcão
+    - PICKUP: Retirada no local
   version: 1.0.0
-  description: Back-end para gestão de pedidos multicanal, estoque, fidelidade e pagamento mock.
+  contact:
+    name: Lucas
+    url: https://github.com/xlucasdv/restaurante-API
+  license:
+    name: Academic License
+
 servers:
   - url: http://localhost:3000
     description: Servidor local de desenvolvimento
-paths:
-  /auth/login:
-    post:
-      summary: Autenticação e geração de token JWT
-      tags: [Auth]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email, senha]
-              properties:
-                email: { type: string, format: email }
-                senha: { type: string, minLength: 6 }
-      responses:
-        '200':
-          description: Token gerado com sucesso
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  accessToken: { type: string }
-                  refreshToken: { type: string }
-                  expiresIn: { type: number }
-        '401': { $ref: '#/components/responses/UnauthorizedError' }
+  - url: https://restaurante-api.onrender.com
+    description: Servidor de produção (Render)
 
-  /pedidos:
-    post:
-      summary: Criar novo pedido
-      tags: [Pedidos]
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - in: header
-          name: Idempotency-Key
-          required: true
-          schema: { type: string, format: uuid }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [canalPedido, unidadeId, itens]
-              properties:
-                canalPedido: { $ref: '#/components/schemas/CanalPedido' }
-                unidadeId: { type: integer }
-                itens:
-                  type: array
-                  items:
-                    type: object
-                    required: [produtoId, quantidade]
-                    properties:
-                      produtoId: { type: integer }
-                      quantidade: { type: integer, minimum: 1 }
-      responses:
-        '201':
-          description: Pedido criado
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id: { type: string, format: uuid }
-                  status: { type: string }
-                  valorTotal: { type: number }
-        '400': { $ref: '#/components/responses/ValidationError' }
-        '409': { $ref: '#/components/responses/ConflictError' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-    get:
-      summary: Listar pedidos com filtros
-      tags: [Pedidos]
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - in: query
-          name: canalPedido
-          schema: { $ref: '#/components/schemas/CanalPedido' }
-        - in: query
-          name: status
-          schema: { type: string }
-        - in: query
-          name: page
-          schema: { type: integer, default: 1 }
-        - in: query
-          name: limit
-          schema: { type: integer, default: 20 }
-      responses:
-        '200':
-          description: Lista de pedidos
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data: { type: array }
-                  meta: { type: object }
+tags:
+  - name: Autenticação
+    description: Endpoints de autenticação e login
+  - name: Produtos
+    description: Gestão de cardápio e produtos
+  - name: Pedidos
+    description: Criação e gestão de pedidos
+  - name: Pagamentos
+    description: Processamento de pagamentos (mock)
+  - name: Fidelidade
+    description: Programa de pontos e fidelidade
+
+security:
+  - bearerAuth: []
 
 components:
   securitySchemes:
@@ -110,29 +61,1166 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: |
+        Token JWT obtido através do endpoint `/auth/login`.
+        Envie no header: `Authorization: Bearer <token>`
+
   schemas:
-    CanalPedido:
-      type: string
-      enum: [APP, TOTEM, BALCAO, PICKUP, WEB]
-    ErrorResponse:
+    Error:
       type: object
       properties:
         error:
           type: object
           properties:
-            code: { type: string }
-            message: { type: string }
-            details: { type: object, nullable: true }
-  responses:
-    UnauthorizedError:
-      description: Não autenticado
-      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
-    ValidationError:
-      description: Dados inválidos
-      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
-    ConflictError:
-      description: Conflito
-      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
-    UnprocessableEntity:
-      description: Regra de negócio falhou
-      content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+            code:
+              type: string
+              example: "NAO_AUTENTICADO"
+            message:
+              type: string
+              example: "Token não fornecido ou formato inválido"
+            details:
+              type: string
+              nullable: true
+              example: null
+
+    Usuario:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "abc123-def456"
+        nome:
+          type: string
+          example: "João Silva"
+        email:
+          type: string
+          format: email
+          example: "joao@email.com"
+        perfil:
+          type: string
+          enum: [CLIENTE, GERENTE, COZINHA, ATENDENTE]
+          example: "CLIENTE"
+        criadoEm:
+          type: string
+          format: date-time
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - senha
+      properties:
+        email:
+          type: string
+          format: email
+          example: "gerente@teste.com"
+        senha:
+          type: string
+          minLength: 6
+          example: "123456"
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        expiresIn:
+          type: integer
+          example: 900
+          description: Tempo de expiração em segundos
+        usuario:
+          $ref: '#/components/schemas/Usuario'
+
+    Produto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "prod-123"
+        nome:
+          type: string
+          example: "Pizza Margherita"
+        descricao:
+          type: string
+          example: "Pizza tradicional com molho de tomate e manjericão"
+        preco:
+          type: number
+          format: float
+          example: 45.90
+        categoria:
+          type: string
+          example: "Pizzas"
+        disponivel:
+          type: boolean
+          example: true
+        unidadeId:
+          type: string
+          format: uuid
+          example: "unidade-1"
+        criadoEm:
+          type: string
+          format: date-time
+
+    ProdutoCreate:
+      type: object
+      required:
+        - nome
+        - descricao
+        - preco
+        - categoria
+        - unidadeId
+      properties:
+        nome:
+          type: string
+          minLength: 3
+          example: "Pizza Margherita"
+        descricao:
+          type: string
+          minLength: 10
+          example: "Pizza tradicional com molho de tomate, mussarela e manjericão fresco"
+        preco:
+          type: number
+          format: float
+          minimum: 0.01
+          example: 45.90
+        categoria:
+          type: string
+          example: "Pizzas"
+        disponivel:
+          type: boolean
+          default: true
+          example: true
+        unidadeId:
+          type: string
+          format: uuid
+          example: "unidade-1"
+
+    ProdutoUpdate:
+      type: object
+      properties:
+        nome:
+          type: string
+          minLength: 3
+          example: "Pizza Margherita Especial"
+        descricao:
+          type: string
+          minLength: 10
+        preco:
+          type: number
+          format: float
+          minimum: 0.01
+          example: 49.90
+        categoria:
+          type: string
+          example: "Pizzas Premium"
+        disponivel:
+          type: boolean
+          example: false
+        unidadeId:
+          type: string
+          format: uuid
+
+    PedidoItem:
+      type: object
+      required:
+        - produtoId
+        - quantidade
+      properties:
+        produtoId:
+          type: string
+          format: uuid
+          example: "prod-123"
+        quantidade:
+          type: integer
+          minimum: 1
+          example: 2
+
+    Pedido:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "pedido-456"
+        clienteId:
+          type: string
+          format: uuid
+          example: "cliente-789"
+        unidadeId:
+          type: string
+          format: uuid
+          example: "unidade-1"
+        canalPedido:
+          type: string
+          enum: [APP, TOTEM, BALCAO, PICKUP, WEB]
+          example: "APP"
+        status:
+          type: string
+          enum: [NOVO, PREPARANDO, PRONTO, ENTREGUE, CANCELADO]
+          example: "NOVO"
+        valorTotal:
+          type: number
+          format: float
+          example: 91.80
+        idempotenciaKey:
+          type: string
+          nullable: true
+          example: "unique-key-123"
+        itens:
+          type: array
+          items:
+            $ref: '#/components/schemas/PedidoItem'
+        criadoEm:
+          type: string
+          format: date-time
+
+    PedidoCreate:
+      type: object
+      required:
+        - canalPedido
+        - unidadeId
+        - itens
+      properties:
+        canalPedido:
+          type: string
+          enum: [APP, TOTEM, BALCAO, PICKUP, WEB]
+          description: Canal de origem do pedido (multicanalidade)
+          example: "APP"
+        unidadeId:
+          type: string
+          format: uuid
+          description: ID da unidade/filial
+          example: "unidade-1"
+        itens:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/PedidoItem'
+          description: Lista de itens do pedido
+        idempotenciaKey:
+          type: string
+          description: Chave única para evitar duplicidade (opcional)
+          example: "unique-key-123"
+
+    PedidoStatusUpdate:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [PREPARANDO, PRONTO, ENTREGUE, CANCELADO]
+          example: "PREPARANDO"
+
+    PagamentoMockRequest:
+      type: object
+      required:
+        - pedidoId
+        - simularStatus
+      properties:
+        pedidoId:
+          type: string
+          format: uuid
+          example: "pedido-456"
+        simularStatus:
+          type: string
+          enum: [APROVADO, RECUSADO]
+          description: Status a ser simulado no pagamento mock
+          example: "APROVADO"
+
+    PagamentoMockResponse:
+      type: object
+      properties:
+        aprovado:
+          type: boolean
+          example: true
+        status:
+          type: string
+          enum: [APROVADO, RECUSADO]
+          example: "APROVADO"
+        pedidoId:
+          type: string
+          format: uuid
+          example: "pedido-456"
+        transacaoId:
+          type: string
+          example: "txn-abc123"
+        processadoEm:
+          type: string
+          format: date-time
+
+    FidelidadeResponse:
+      type: object
+      properties:
+        pontos:
+          type: integer
+          example: 150
+          description: Saldo atual de pontos
+        consentimento:
+          type: boolean
+          example: true
+          description: Consentimento LGPD para programa de fidelidade
+
+    PaginatedResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pedido'
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+              example: 1
+            limit:
+              type: integer
+              example: 20
+            total:
+              type: integer
+              example: 45
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Autenticação
+      summary: Login do usuário
+      description: |
+        Autentica o usuário e retorna um token JWT.
+        O token deve ser enviado no header `Authorization: Bearer <token>` para acessar rotas protegidas.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              gerente:
+                summary: Login de gerente
+                value:
+                  email: "gerente@teste.com"
+                  senha: "123456"
+              cliente:
+                summary: Login de cliente
+                value:
+                  email: "cliente@teste.com"
+                  senha: "123456"
+      responses:
+        '200':
+          description: Login realizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              example:
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                expiresIn: 900
+                usuario:
+                  id: "abc123"
+                  email: "gerente@teste.com"
+                  nome: "Gerente Teste"
+                  perfil: "GERENTE"
+        '400':
+          description: Campos obrigatórios não preenchidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "CAMPOS_OBRIGATORIOS"
+                  message: "email e senha são obrigatórios"
+        '401':
+          description: Credenciais inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "CREDENCIAIS_INVALIDAS"
+                  message: "Email ou senha inválidos"
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /produtos:
+    get:
+      tags:
+        - Produtos
+      summary: Listar produtos
+      description: Retorna lista de produtos disponíveis (rota pública)
+      security: []
+      parameters:
+        - name: categoria
+          in: query
+          schema:
+            type: string
+          description: Filtrar por categoria
+          example: "Pizzas"
+        - name: disponivel
+          in: query
+          schema:
+            type: boolean
+          description: Filtrar por disponibilidade
+          example: true
+        - name: unidadeId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filtrar por unidade
+      responses:
+        '200':
+          description: Lista de produtos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Produto'
+                  count:
+                    type: integer
+                    example: 15
+              example:
+                success: true
+                data:
+                  - id: "prod-123"
+                    nome: "Pizza Margherita"
+                    descricao: "Pizza tradicional"
+                    preco: 45.90
+                    categoria: "Pizzas"
+                    disponivel: true
+                    unidadeId: "unidade-1"
+                count: 1
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - Produtos
+      summary: Criar novo produto
+      description: |
+        Cria um novo produto no cardápio.
+        **Requer perfil GERENTE.**
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProdutoCreate'
+            example:
+              nome: "Pizza Margherita"
+              descricao: "Pizza tradicional com molho de tomate, mussarela e manjericão fresco"
+              preco: 45.90
+              categoria: "Pizzas"
+              disponivel: true
+              unidadeId: "unidade-1"
+      responses:
+        '201':
+          description: Produto criado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Produto criado com sucesso"
+                  data:
+                    $ref: '#/components/schemas/Produto'
+        '400':
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "VALIDATION_ERROR"
+                  message: "Dados inválidos"
+                details:
+                  - field: "nome"
+                    message: "Nome deve ter pelo menos 3 caracteres"
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "NAO_AUTENTICADO"
+                  message: "Token não fornecido ou formato inválido"
+        '403':
+          description: Acesso negado (não é GERENTE)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "ACESSO_NEGADO"
+                  message: "Você não tem permissão para realizar esta ação"
+        '404':
+          description: Unidade não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /produtos/{id}:
+    get:
+      tags:
+        - Produtos
+      summary: Buscar produto por ID
+      description: Retorna detalhes de um produto específico (rota pública)
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID do produto
+          example: "prod-123"
+      responses:
+        '200':
+          description: Produto encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Produto'
+        '404':
+          description: Produto não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "NAO_ENCONTRADO"
+                  message: "Produto não encontrado"
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - Produtos
+      summary: Atualizar produto
+      description: |
+        Atualiza os dados de um produto existente.
+        **Requer perfil GERENTE.**
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID do produto
+          example: "prod-123"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProdutoUpdate'
+            example:
+              nome: "Pizza Margherita Especial"
+              preco: 49.90
+              disponivel: true
+      responses:
+        '200':
+          description: Produto atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Produto atualizado com sucesso"
+                  data:
+                    $ref: '#/components/schemas/Produto'
+        '400':
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Acesso negado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Produto não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Produtos
+      summary: Excluir produto
+      description: |
+        Remove um produto do cardápio.
+        **Requer perfil GERENTE.**
+        Produtos com histórico de pedidos não podem ser excluídos.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID do produto
+          example: "prod-123"
+      responses:
+        '200':
+          description: Produto excluído com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Produto excluído com sucesso"
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Acesso negado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Produto não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflito - produto já foi pedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "CONFLITO"
+                  message: "Não é possível excluir produto que já foi pedido"
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /pedidos:
+    post:
+      tags:
+        - Pedidos
+      summary: Criar novo pedido
+      description: |
+        Cria um novo pedido com validação de estoque e registro de multicanalidade.
+        O estoque é debitado automaticamente.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PedidoCreate'
+            examples:
+              app:
+                summary: Pedido via aplicativo
+                value:
+                  canalPedido: "APP"
+                  unidadeId: "unidade-1"
+                  itens:
+                    - produtoId: "prod-123"
+                      quantidade: 2
+                    - produtoId: "prod-456"
+                      quantidade: 1
+              totem:
+                summary: Pedido via totem
+                value:
+                  canalPedido: "TOTEM"
+                  unidadeId: "unidade-1"
+                  itens:
+                    - produtoId: "prod-123"
+                      quantidade: 1
+      responses:
+        '201':
+          description: Pedido criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+              example:
+                id: "pedido-456"
+                clienteId: "cliente-789"
+                unidadeId: "unidade-1"
+                canalPedido: "APP"
+                status: "NOVO"
+                valorTotal: 91.80
+                itens:
+                  - produtoId: "prod-123"
+                    quantidade: 2
+                    precoUnitario: 45.90
+                criadoEm: "2026-06-15T10:30:00Z"
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Produto ou unidade não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "PRODUTO_NAO_ENCONTRADO"
+                  message: "Produto prod-999 não existe na unidade"
+        '409':
+          description: Estoque insuficiente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "ESTOQUE_INSUFICIENTE"
+                  message: "Estoque insuficiente para Pizza Margherita"
+        '422':
+          description: canalPedido inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "CAMPO_INVALIDO"
+                  message: "canalPedido é obrigatório e deve ser um dos valores: APP, TOTEM, BALCAO, PICKUP ou WEB"
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags:
+        - Pedidos
+      summary: Listar pedidos
+      description: |
+        Lista pedidos com paginação e filtros.
+        Clientes só veem seus próprios pedidos.
+        GERENTE/COZINHA veem todos os pedidos.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: canalPedido
+          in: query
+          schema:
+            type: string
+            enum: [APP, TOTEM, BALCAO, PICKUP, WEB]
+          description: Filtrar por canal
+          example: "APP"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [NOVO, PREPARANDO, PRONTO, ENTREGUE, CANCELADO]
+          description: Filtrar por status
+          example: "PREPARANDO"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Número da página
+          example: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+          description: Itens por página
+          example: 20
+      responses:
+        '200':
+          description: Lista de pedidos com paginação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+              example:
+                data:
+                  - id: "pedido-456"
+                    canalPedido: "APP"
+                    status: "PREPARANDO"
+                    valorTotal: 91.80
+                meta:
+                  page: 1
+                  limit: 20
+                  total: 45
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /pedidos/{id}:
+    get:
+      tags:
+        - Pedidos
+      summary: Buscar pedido por ID
+      description: |
+        Retorna detalhes completos de um pedido.
+        Clientes só podem ver seus próprios pedidos.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID do pedido
+          example: "pedido-456"
+      responses:
+        '200':
+          description: Pedido encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+              example:
+                id: "pedido-456"
+                clienteId: "cliente-789"
+                canalPedido: "APP"
+                status: "PREPARANDO"
+                valorTotal: 91.80
+                itens:
+                  - produtoId: "prod-123"
+                    quantidade: 2
+                    precoUnitario: 45.90
+                    produto:
+                      nome: "Pizza Margherita"
+                pagamento:
+                  id: "pag-123"
+                  status: "APROVADO"
+                  valor: 91.80
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Acesso negado (cliente tentando ver pedido de outro)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "ACESSO_NEGADO"
+                  message: "Você só pode visualizar seus próprios pedidos"
+        '404':
+          description: Pedido não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /pedidos/{id}/status:
+    patch:
+      tags:
+        - Pedidos
+      summary: Atualizar status do pedido
+      description: |
+        Atualiza o status do pedido.
+        **Requer perfil COZINHA ou GERENTE.**
+        
+        Fluxo de status: NOVO → PREPARANDO → PRONTO → ENTREGUE
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID do pedido
+          example: "pedido-456"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PedidoStatusUpdate'
+            example:
+              status: "PREPARANDO"
+      responses:
+        '200':
+          description: Status atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Acesso negado (não é COZINHA/GERENTE)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Pedido não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Status inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "STATUS_INVALIDO"
+                  message: "Status inválido"
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /pagamentos/mock:
+    post:
+      tags:
+        - Pagamentos
+      summary: Processar pagamento mock
+      description: |
+        Simula o processamento de pagamento através de gateway mock.
+        **Requer perfil GERENTE ou ATENDENTE.**
+        
+        Pode simular sucesso (APROVADO) ou falha (RECUSADO).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PagamentoMockRequest'
+            examples:
+              aprovado:
+                summary: Simular pagamento aprovado
+                value:
+                  pedidoId: "pedido-456"
+                  simularStatus: "APROVADO"
+              recusado:
+                summary: Simular pagamento recusado
+                value:
+                  pedidoId: "pedido-456"
+                  simularStatus: "RECUSADO"
+      responses:
+        '200':
+          description: Pagamento processado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagamentoMockResponse'
+              examples:
+                aprovado:
+                  summary: Pagamento aprovado
+                  value:
+                    aprovado: true
+                    status: "APROVADO"
+                    pedidoId: "pedido-456"
+                    transacaoId: "txn-abc123"
+                    processadoEm: "2026-06-15T10:35:00Z"
+                recusado:
+                  summary: Pagamento recusado
+                  value:
+                    aprovado: false
+                    status: "RECUSADO"
+                    pedidoId: "pedido-456"
+                    transacaoId: "txn-abc124"
+                    processadoEm: "2026-06-15T10:35:00Z"
+        '400':
+          description: Parâmetro inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "PARAMETRO_INVALIDO"
+                  message: "simularStatus deve ser APROVADO ou RECUSADO"
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Acesso negado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro no processamento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "FALHA_PAGAMENTO"
+                  message: "Erro ao processar pagamento"
+
+  /fidelidade/saldo:
+    get:
+      tags:
+        - Fidelidade
+      summary: Consultar saldo de pontos
+      description: |
+        Retorna o saldo atual de pontos do cliente no programa de fidelidade.
+        Inclui informação de consentimento LGPD.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Saldo de pontos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FidelidadeResponse'
+              example:
+                pontos: 150
+                consentimento: true
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Programa de fidelidade não ativado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "NAO_ENCONTRADO"
+                  message: "Programa de fidelidade não ativado"
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

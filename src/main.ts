@@ -4,11 +4,29 @@ import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import path from 'path';
+import { Perfil } from '@prisma/client';
 import { prisma } from './infrastructure/prisma';
 import { authMiddleware } from './api/middlewares/auth';
 import { roleMiddleware } from './api/middlewares/role';
 import { pedidoController } from './api/controllers/pedidoController';
+import { produtoController } from './api/controllers/produtoController';
+import { errorHandler } from './api/middlewares/errorHandler';
+
+// Tipagem do Request para TypeScript reconhecer req.user
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        perfil: Perfil;
+      };
+    }
+  }
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,10 +36,21 @@ app.use(cors());
 app.use(helmet());
 app.use(express.json());
 
+// ==================== SWAGGER UI ====================
+try {
+  const swaggerDocument = YAML.load(path.resolve(__dirname, '../openapi.yaml'));
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+  console.log('📖 Swagger UI disponível em http://localhost:' + PORT + '/api-docs');
+} catch (error) {
+  console.warn('⚠️  Swagger não configurado:', error);
+}
+
 // ==================== ROTAS PÚBLICAS ====================
 app.post('/auth/login', async (req: Request, res: Response) => {
   try {
     const { email, senha } = req.body;
+    
+    console.log('🔐 Tentativa de login:', email);
     
     if (!email || !senha) {
       return res.status(400).json({ 
@@ -29,29 +58,68 @@ app.post('/auth/login', async (req: Request, res: Response) => {
       });
     }
     
-    // Mock: aceita qualquer credencial para desenvolvimento
-    const usuario = { id: 'user_mock_123', email, perfil: 'CLIENTE' };
+    // Buscar usuário no banco
+    const usuario = await prisma.usuario.findUnique({
+      where: { email }
+    });
     
-    // JWT: garantindo tipos seguros
+    if (!usuario) {
+      console.log('❌ Usuário não encontrado:', email);
+      return res.status(401).json({ 
+        error: { code: 'CREDENCIAIS_INVALIDAS', message: 'Email ou senha inválidos' } 
+      });
+    }
+    
+    console.log('✅ Usuário encontrado:', usuario.email);
+    
+    // JWT: Tipagem correta para evitar erros TypeScript
     const secret = process.env.JWT_SECRET || 'fallback_secret_min_32_characters_here_12345';
-    const expiresIn = process.env.JWT_EXPIRES_IN || '15m';
+    const expiresInValue = (process.env.JWT_EXPIRES_IN || '15m') as jwt.SignOptions['expiresIn'];
+    
+    const signOptions: SignOptions = { 
+      expiresIn: expiresInValue 
+    };
     
     const accessToken = jwt.sign(
       { id: usuario.id, perfil: usuario.perfil },
       secret,
-      { expiresIn }
+      signOptions
     );
     
+    console.log('✅ Token gerado com sucesso');
+    
     return res.status(200).json({
-      accessToken,
+      token: accessToken,
       expiresIn: 900,
-      user: { id: usuario.id, email: usuario.email, perfil: usuario.perfil }
+      usuario: { 
+        id: usuario.id, 
+        email: usuario.email, 
+        nome: usuario.nome,
+        perfil: usuario.perfil 
+      }
     });
-  } catch (error) {
-    console.error('[Login Error]', error);
-    return res.status(500).json({ error: { code: 'ERRO_INTERNO', message: 'Falha na autenticação' } });
+  } catch (error: any) {
+    console.error('❌ [Login Error]', error);
+    console.error('❌ Stack:', error.stack);
+    return res.status(500).json({ 
+      error: { 
+        code: 'ERRO_INTERNO', 
+        message: 'Falha na autenticação',
+        details: error.message 
+      } 
+    });
   }
 });
+
+// ==================== ROTAS DE PRODUTOS ====================
+// Produtos (público para leitura)
+app.get('/produtos', produtoController.index);
+app.get('/produtos/:id', produtoController.show);
+
+// Produtos (apenas GERENTE para escrita)
+app.post('/produtos', authMiddleware, roleMiddleware(['GERENTE']), produtoController.store);
+app.put('/produtos/:id', authMiddleware, roleMiddleware(['GERENTE']), produtoController.update);
+app.delete('/produtos/:id', authMiddleware, roleMiddleware(['GERENTE']), produtoController.delete);
 
 // ==================== ROTAS PROTEGIDAS ====================
 
@@ -59,10 +127,11 @@ app.post('/auth/login', async (req: Request, res: Response) => {
 app.post('/pedidos', authMiddleware, pedidoController.criar);
 app.get('/pedidos', authMiddleware, pedidoController.listar);
 
-// Buscar pedido por ID (rota simples inline para evitar erro se não existir no controller)
+// Buscar pedido por ID
 app.get('/pedidos/:id', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
+    
     const pedido = await prisma.pedido.findUnique({
       where: { id },
       include: { itens: { include: { produto: true } }, pagamento: true }
@@ -106,41 +175,9 @@ app.get('/fidelidade/saldo', authMiddleware, async (req: Request, res: Response)
   }
 });
 
-// Swagger/OpenAPI (rota simples para documentação)
-app.get('/api-docs', (req: Request, res: Response) => {
-  res.json({
-    message: 'Documentação da API',
-    endpoints: [
-      { method: 'POST', path: '/auth/login', description: 'Autenticação' },
-      { method: 'POST', path: '/pedidos', description: 'Criar pedido' },
-      { method: 'GET', path: '/pedidos', description: 'Listar pedidos' },
-      { method: 'GET', path: '/pedidos/:id', description: 'Buscar pedido' },
-      { method: 'PATCH', path: '/pedidos/:id/status', description: 'Atualizar status' },
-      { method: 'POST', path: '/pagamentos/mock', description: 'Mock de pagamento' },
-      { method: 'GET', path: '/fidelidade/saldo', description: 'Saldo de fidelidade' }
-    ],
-    hint: 'Use o Insomnia com o arquivo openapi.yaml para testes completos'
-  });
-});
-
 // ==================== ERROR HANDLER GLOBAL ====================
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error('[ERROR]', err);
-  
-  // Erros conhecidos do Prisma
-  if (err.code === 'P2002') {
-    return res.status(409).json({ error: { code: 'CONFLITO', message: 'Recurso já existe' } });
-  }
-  if (err.code === 'P2025') {
-    return res.status(404).json({ error: { code: 'NAO_ENCONTRADO', message: 'Recurso não encontrado' } });
-  }
-  
-  const status = err.status || err.statusCode || 500;
-  const code = err.code || 'ERRO_INTERNO';
-  const message = err.message || 'Falha interna no servidor';
-  
-  res.status(status).json({ error: { code, message, details: err.details || null } });
-});
+// DEVE SER O ÚLTIMO MIDDLEWARE
+app.use(errorHandler);
 
 // ==================== INICIALIZAÇÃO ====================
 async function start() {
@@ -151,7 +188,9 @@ async function start() {
     
     app.listen(PORT, () => {
       console.log(`🚀 API rodando em http://localhost:${PORT}`);
-      console.log(`📖 Documentação: http://localhost:${PORT}/api-docs`);
+      console.log(`📖 Swagger UI: http://localhost:${PORT}/api-docs`);
+      console.log(`📦 Produtos: http://localhost:${PORT}/produtos`);
+      console.log(`🛒 Pedidos: http://localhost:${PORT}/pedidos`);
     });
   } catch (error: any) {
     console.error('❌ Falha ao conectar no banco:', error?.message || error);
