@@ -1,0 +1,883 @@
+{
+  "info": {
+    "name": "Restaurante API - Testes",
+    "description": "Coleção de testes para API de Restaurante - Projeto Multidisciplinar Back-End",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - Autenticação",
+      "item": [
+        {
+          "name": "Login - Gerente (Sucesso)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Token is present\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.token).to.exist;",
+                  "    pm.environment.set(\"token_gerente\", jsonData.token);",
+                  "    pm.environment.set(\"usuario_id\", jsonData.usuario.id);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has usuario data\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.usuario).to.have.property('email');",
+                  "    pm.expect(jsonData.usuario.perfil).to.eql('GERENTE');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"gerente@teste.com\",\n  \"senha\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["auth", "login"]
+            },
+            "description": "Login de gerente para obter token JWT"
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Senha Incorreta (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Error code is CREDENCIAIS_INVALIDAS\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.code).to.eql('CREDENCIAIS_INVALIDAS');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"gerente@teste.com\",\n  \"senha\": \"senha_errada\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["auth", "login"]
+            },
+            "description": "Tentativa de login com senha incorreta"
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Campos Obrigatórios (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error code is CAMPOS_OBRIGATORIOS\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.code).to.eql('CAMPOS_OBRIGATORIOS');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["auth", "login"]
+            },
+            "description": "Tentativa de login sem senha"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 - Produtos",
+      "item": [
+        {
+          "name": "Listar Produtos - Público (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is array or object\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('object');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/produtos",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["produtos"]
+            },
+            "description": "Listar todos os produtos (rota pública)"
+          },
+          "response": []
+        },
+        {
+          "name": "Criar Produto - Gerente (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Product created successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('nome');",
+                  "    pm.environment.set(\"produto_id\", jsonData.data.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_gerente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Pizza Margherita\",\n  \"descricao\": \"Pizza tradicional com molho de tomate, mussarela e manjericão fresco\",\n  \"preco\": 45.90,\n  \"categoria\": \"Pizzas\",\n  \"disponivel\": true,\n  \"unidadeId\": \"unidade-1\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/produtos",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["produtos"]
+            },
+            "description": "Criar novo produto (apenas gerente)"
+          },
+          "response": []
+        },
+        {
+          "name": "Criar Produto - Sem Autenticação (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Error code is NAO_AUTENTICADO\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.code).to.eql('NAO_AUTENTICADO');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Produto Teste\",\n  \"descricao\": \"Descrição teste\",\n  \"preco\": 10.00,\n  \"categoria\": \"Teste\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/produtos",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["produtos"]
+            },
+            "description": "Tentativa de criar produto sem autenticação"
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar Produto por ID (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Product has required fields\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('nome');",
+                  "    pm.expect(jsonData.data).to.have.property('preco');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/produtos/{{produto_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["produtos", "{{produto_id}}"]
+            },
+            "description": "Buscar produto específico por ID"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 - Pedidos",
+      "item": [
+        {
+          "name": "Criar Pedido - Cliente (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Order created successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData.canalPedido).to.eql('APP');",
+                  "    pm.environment.set(\"pedido_id\", jsonData.id);",
+                  "});",
+                  "",
+                  "pm.test(\"Order has items\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.itens).to.be.an('array');",
+                  "    pm.expect(jsonData.itens.length).to.be.above(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_gerente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"canalPedido\": \"APP\",\n  \"unidadeId\": \"unidade-1\",\n  \"itens\": [\n    {\n      \"produtoId\": \"{{produto_id}}\",\n      \"quantidade\": 2\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/pedidos",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["pedidos"]
+            },
+            "description": "Criar novo pedido com multicanalidade (APP)"
+          },
+          "response": []
+        },
+        {
+          "name": "Criar Pedido - Sem Token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Error code is NAO_AUTENTICADO\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.code).to.eql('NAO_AUTENTICADO');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"canalPedido\": \"WEB\",\n  \"unidadeId\": \"unidade-1\",\n  \"itens\": []\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/pedidos",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["pedidos"]
+            },
+            "description": "Tentativa de criar pedido sem autenticação"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar Pedidos (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has data and meta\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData).to.have.property('meta');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_gerente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/pedidos",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["pedidos"]
+            },
+            "description": "Listar todos os pedidos (com paginação)"
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar Pedido por ID (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Order has required fields\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "    pm.expect(jsonData).to.have.property('itens');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_gerente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/pedidos/{{pedido_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["pedidos", "{{pedido_id}}"]
+            },
+            "description": "Buscar pedido específico por ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar Status do Pedido - Cozinha (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Status updated\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('PREPARANDO');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_gerente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PREPARANDO\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/pedidos/{{pedido_id}}/status",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["pedidos", "{{pedido_id}}", "status"]
+            },
+            "description": "Atualizar status do pedido (COZINHA/GERENTE)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 - Pagamento Mock",
+      "item": [
+        {
+          "name": "Pagamento Mock - Sucesso (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Payment approved\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.aprovado).to.be.true;",
+                  "    pm.expect(jsonData.status).to.eql('APROVADO');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_gerente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pedidoId\": \"{{pedido_id}}\",\n  \"simularStatus\": \"APROVADO\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/pagamentos/mock",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["pagamentos", "mock"]
+            },
+            "description": "Simular pagamento aprovado"
+          },
+          "response": []
+        },
+        {
+          "name": "Pagamento Mock - Recusado (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Payment denied\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.aprovado).to.be.false;",
+                  "    pm.expect(jsonData.status).to.eql('RECUSADO');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_gerente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pedidoId\": \"{{pedido_id}}\",\n  \"simularStatus\": \"RECUSADO\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/pagamentos/mock",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["pagamentos", "mock"]
+            },
+            "description": "Simular pagamento recusado"
+          },
+          "response": []
+        },
+        {
+          "name": "Pagamento Mock - Status Inválido (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Error code is PARAMETRO_INVALIDO\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.code).to.eql('PARAMETRO_INVALIDO');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_gerente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pedidoId\": \"{{pedido_id}}\",\n  \"simularStatus\": \"INVALIDO\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/pagamentos/mock",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["pagamentos", "mock"]
+            },
+            "description": "Tentativa de pagamento com status inválido"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 - Fidelidade",
+      "item": [
+        {
+          "name": "Consultar Saldo de Pontos (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has pontos field\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('pontos');",
+                  "    pm.expect(jsonData.pontos).to.be.a('number');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_gerente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/fidelidade/saldo",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["fidelidade", "saldo"]
+            },
+            "description": "Consultar pontos de fidelidade do cliente"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06 - Autorização",
+      "item": [
+        {
+          "name": "Acesso Negado - Cliente tentando criar produto (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "",
+                  "pm.test(\"Error code is ACESSO_NEGADO or FORBIDDEN\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(['ACESSO_NEGADO', 'FORBIDDEN']).to.include(jsonData.error.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_cliente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Produto Teste\",\n  \"descricao\": \"Tentativa de cliente criar produto\",\n  \"preco\": 10.00,\n  \"categoria\": \"Teste\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/produtos",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["produtos"]
+            },
+            "description": "Cliente tentando acessar rota de gerente (403)"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "token_gerente",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "token_cliente",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "produto_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pedido_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "usuario_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
