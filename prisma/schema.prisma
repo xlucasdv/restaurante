@@ -64,15 +64,16 @@ model Unidade {
 }
 
 model Produto {
-  id        String   @id @default(uuid())
-  unidadeId String
-  unidade   Unidade  @relation(fields: [unidadeId], references: [id])
-  nome      String
-  preco     Float
-  estoque   Estoque?
-  itens     ItemPedido[]
-
-  @@map("produtos")
+  id         String   @id @default(uuid())
+  nome       String
+  descricao  String   // ← ADICIONE ESTA LINHA
+  preco      Float
+  categoria  String
+  disponivel Boolean  @default(true)
+  unidadeId  String
+  unidade    Unidade  @relation(fields: [unidadeId], references: [id])
+  estoque    Estoque?
+  itens      ItemPedido[]
 }
 
 model Estoque {
