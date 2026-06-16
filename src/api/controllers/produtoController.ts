@@ -4,20 +4,18 @@ import { z } from 'zod';
 
 const prisma = new PrismaClient();
 
-// Schema de validação para criação de produto
+// Schema de validação - REMOVIDO descricao
 const createProdutoSchema = z.object({
   nome: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
-  descricao: z.string().min(10, 'Descrição deve ter pelo menos 10 caracteres'),
   preco: z.number().positive('Preço deve ser maior que zero'),
   categoria: z.string().min(1, 'Categoria é obrigatória'),
   disponivel: z.boolean().optional().default(true),
   unidadeId: z.string().min(1, 'ID da unidade é obrigatório'),
 });
 
-// Schema de validação para atualização de produto
+// Schema de atualização - REMOVIDO descricao
 const updateProdutoSchema = z.object({
   nome: z.string().min(3).optional(),
-  descricao: z.string().min(10).optional(),
   preco: z.number().positive().optional(),
   categoria: z.string().min(1).optional(),
   disponivel: z.boolean().optional(),

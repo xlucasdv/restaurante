@@ -168,7 +168,6 @@ components:
       type: object
       required:
         - nome
-        - descricao
         - preco
         - categoria
         - unidadeId
@@ -177,10 +176,6 @@ components:
           type: string
           minLength: 3
           example: "Pizza Margherita"
-        descricao:
-          type: string
-          minLength: 10
-          example: "Pizza tradicional com molho de tomate, mussarela e manjericão fresco"
         preco:
           type: number
           format: float
