@@ -143,16 +143,10 @@ components:
         nome:
           type: string
           example: "Pizza Margherita"
-        descricao:
-          type: string
-          example: "Pizza tradicional com molho de tomate e manjericão"
         preco:
           type: number
           format: float
           example: 45.90
-        categoria:
-          type: string
-          example: "Pizzas"
         disponivel:
           type: boolean
           example: true
@@ -169,7 +163,6 @@ components:
       required:
         - nome
         - preco
-        - categoria
         - unidadeId
       properties:
         nome:
@@ -181,9 +174,6 @@ components:
           format: float
           minimum: 0.01
           example: 45.90
-        categoria:
-          type: string
-          example: "Pizzas"
         disponivel:
           type: boolean
           default: true
@@ -200,17 +190,11 @@ components:
           type: string
           minLength: 3
           example: "Pizza Margherita Especial"
-        descricao:
-          type: string
-          minLength: 10
         preco:
           type: number
           format: float
           minimum: 0.01
           example: 49.90
-        categoria:
-          type: string
-          example: "Pizzas Premium"
         disponivel:
           type: boolean
           example: false

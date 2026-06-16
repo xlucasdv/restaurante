@@ -4,20 +4,18 @@ import { z } from 'zod';
 
 const prisma = new PrismaClient();
 
-// Schema de validação - REMOVIDO descricao
+// Schema de validação - APENAS campos que existem no banco
 const createProdutoSchema = z.object({
   nome: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
   preco: z.number().positive('Preço deve ser maior que zero'),
-  categoria: z.string().min(1, 'Categoria é obrigatória'),
   disponivel: z.boolean().optional().default(true),
   unidadeId: z.string().min(1, 'ID da unidade é obrigatório'),
 });
 
-// Schema de atualização - REMOVIDO descricao
+// Schema de atualização - APENAS campos que existem no banco
 const updateProdutoSchema = z.object({
   nome: z.string().min(3).optional(),
   preco: z.number().positive().optional(),
-  categoria: z.string().min(1).optional(),
   disponivel: z.boolean().optional(),
   unidadeId: z.string().min(1).optional(),
 });
@@ -26,13 +24,9 @@ export const produtoController = {
   // LISTAR TODOS OS PRODUTOS (público)
   async index(req: Request, res: Response) {
     try {
-      const { categoria, disponivel, unidadeId } = req.query;
+      const { disponivel, unidadeId } = req.query;
 
       const filtros: any = {};
-
-      if (categoria) {
-        filtros.categoria = String(categoria);
-      }
 
       if (disponivel !== undefined) {
         filtros.disponivel = disponivel === 'true';
