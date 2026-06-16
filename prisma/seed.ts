@@ -25,12 +25,33 @@ async function main() {
 
   // 2. Produtos com estoque
   const produtos = await prisma.produto.createMany({
-    data: [
-      { id: 'produto-1', unidadeId: unidade.id, nome: 'X-Burger', preco: 25.00 },
-      { id: 'produto-2', unidadeId: unidade.id, nome: 'Batata Frita', preco: 12.00 },
-      { id: 'produto-3', unidadeId: unidade.id, nome: 'Refrigerante', preco: 6.00 }
-    ]
-  });
+  data: [
+    { 
+      id: 'produto-1', 
+      unidadeId: unidade.id, 
+      nome: 'X-Burger', 
+      preco: 25.00,
+      descricao: 'Hambúrguer artesanal com queijo e salada',
+      categoria: 'LANCHE'
+    },
+    { 
+      id: 'produto-2', 
+      unidadeId: unidade.id, 
+      nome: 'Batata Frita', 
+      preco: 12.00,
+      descricao: 'Porção de batatas fritas crocantes',
+      categoria: 'ACOMPANHAMENTO'
+    },
+    { 
+      id: 'produto-3', 
+      unidadeId: unidade.id, 
+      nome: 'Refrigerante', 
+      preco: 6.00,
+      descricao: 'Lata 350ml',
+      categoria: 'BEBIDA'
+    }
+  ]
+});
   console.log('✅ Produtos criados:', produtos.count);
 
   await prisma.estoque.createMany({

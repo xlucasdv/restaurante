@@ -1,9 +1,0 @@
-{
-  "recommendations": [
-    "esbenp.prettier-vscode",
-    "dbaeumer.vscode-eslint",
-    "ms-ossdata.vscode-postgresql",
-    "42crunch.vscode-openapi",
-    "humao.rest-client"
-  ]
-}
