@@ -16,7 +16,6 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
   const token = authHeader.split(' ')[1];
   
   try {
-    // ✅ IMPORTANTE: Usar o MESMO secret do login
     const secret = process.env.JWT_SECRET || 'fallback_secret_min_32_characters_here_12345';
     
     const decoded = jwt.verify(token, secret) as { id: string; perfil: string };
