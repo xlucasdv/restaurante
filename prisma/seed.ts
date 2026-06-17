@@ -6,11 +6,9 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Iniciando seed...');
 
-  // Hash real das senhas com bcrypt
   const senhaHash = await bcrypt.hash('123456', 10);
   console.log('🔐 Hash de senha gerado com bcrypt');
 
-  // 1. Unidade
   const unidade = await prisma.unidade.upsert({
     where: { id: 'unidade-1' },
     update: {},
@@ -23,7 +21,6 @@ async function main() {
   });
   console.log('✅ Unidade criada:', unidade.nome);
 
-  // 2. Produtos com estoque
   const produtos = await prisma.produto.createMany({
   data: [
     { 
@@ -63,7 +60,6 @@ async function main() {
   });
   console.log('✅ Estoque inicializado');
 
-  // 3. Usuários com diferentes perfis
   const cliente = await prisma.usuario.upsert({
     where: { id: 'cliente-1' },
     update: {},
