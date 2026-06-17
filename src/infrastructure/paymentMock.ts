@@ -2,6 +2,7 @@ import { prisma } from './prisma';
 
 export const paymentMockGateway = {
   async processar(pedidoId: string, simularStatus: 'APROVADO' | 'RECUSADO') {
+    // Simula latência de rede
     await new Promise(resolve => setTimeout(resolve, Number(process.env.PAYMENT_MOCK_DELAY_MS) || 800));
 
     const gatewayRef = `mock_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -11,6 +12,7 @@ export const paymentMockGateway = {
       timestamp: new Date().toISOString()
     };
 
+    // Registra pagamento
     await prisma.pagamento.create({
       data: {
         pedidoId,
@@ -20,12 +22,14 @@ export const paymentMockGateway = {
       }
     });
 
+    // Atualiza status do pedido
     const novoStatus = simularStatus === 'APROVADO' ? 'PAGO' : 'CANCELADO';
     await prisma.pedido.update({ 
       where: { id: pedidoId }, 
       data: { status: novoStatus } 
     });
 
+    // Se recusado, libera estoque
     if (simularStatus === 'RECUSADO') {
       const itens = await prisma.itemPedido.findMany({ where: { pedidoId } });
       for (const item of itens) {
@@ -36,6 +40,7 @@ export const paymentMockGateway = {
       }
     }
 
+    // Log de auditoria
     await prisma.logAuditoria.create({
       data: {
         acao: 'PROCESSAR_PAGAMENTO_MOCK',
