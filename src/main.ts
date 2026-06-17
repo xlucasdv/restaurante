@@ -1,4 +1,3 @@
-// ✅ CRÍTICO: Carrega variáveis de ambiente ANTES de qualquer outro import
 import 'dotenv/config';
 
 import express, { Request, Response, NextFunction } from 'express';
@@ -16,7 +15,6 @@ import { pedidoController } from './api/controllers/pedidoController';
 import { produtoController } from './api/controllers/produtoController';
 import { errorHandler } from './api/middlewares/errorHandler';
 
-// Tipagem do Request para TypeScript reconhecer req.user
 declare global {
   namespace Express {
     interface Request {
@@ -31,12 +29,10 @@ declare global {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middlewares globais
 app.use(cors());
 app.use(helmet());
 app.use(express.json());
 
-// ==================== SWAGGER UI ====================
 try {
   const swaggerDocument = YAML.load(path.resolve(__dirname, '../openapi.yaml'));
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -45,7 +41,6 @@ try {
   console.warn('⚠️  Swagger não configurado:', error);
 }
 
-// ==================== ROTAS PÚBLICAS ====================
 app.post('/auth/login', async (req: Request, res: Response) => {
   try {
     const { email, senha } = req.body;
@@ -58,7 +53,6 @@ app.post('/auth/login', async (req: Request, res: Response) => {
       });
     }
     
-    // Buscar usuário no banco
     const usuario = await prisma.usuario.findUnique({
       where: { email }
     });
@@ -72,7 +66,6 @@ app.post('/auth/login', async (req: Request, res: Response) => {
     
     console.log('✅ Usuário encontrado:', usuario.email);
     
-    // JWT: Tipagem correta para evitar erros TypeScript
     const secret = process.env.JWT_SECRET || 'fallback_secret_min_32_characters_here_12345';
     const expiresInValue = (process.env.JWT_EXPIRES_IN || '15m') as jwt.SignOptions['expiresIn'];
     
@@ -111,23 +104,16 @@ app.post('/auth/login', async (req: Request, res: Response) => {
   }
 });
 
-// ==================== ROTAS DE PRODUTOS ====================
-// Produtos (público para leitura)
 app.get('/produtos', produtoController.index);
 app.get('/produtos/:id', produtoController.show);
 
-// Produtos (apenas GERENTE para escrita)
 app.post('/produtos', authMiddleware, roleMiddleware(['GERENTE']), produtoController.store);
 app.put('/produtos/:id', authMiddleware, roleMiddleware(['GERENTE']), produtoController.update);
 app.delete('/produtos/:id', authMiddleware, roleMiddleware(['GERENTE']), produtoController.delete);
 
-// ==================== ROTAS PROTEGIDAS ====================
-
-// Pedidos
 app.post('/pedidos', authMiddleware, pedidoController.criar);
 app.get('/pedidos', authMiddleware, pedidoController.listar);
 
-// Buscar pedido por ID
 app.get('/pedidos/:id', authMiddleware, async (req: Request, res: Response) => {
   try {
     const id = String(req.params.id);
@@ -141,7 +127,6 @@ app.get('/pedidos/:id', authMiddleware, async (req: Request, res: Response) => {
       return res.status(404).json({ error: { code: 'NAO_ENCONTRADO', message: 'Pedido não encontrado' } });
     }
     
-    // Se for cliente, só pode ver seus próprios pedidos
     if (req.user?.perfil === 'CLIENTE' && pedido.clienteId !== req.user.id) {
       return res.status(403).json({ error: { code: 'ACESSO_NEGADO', message: 'Você só pode visualizar seus próprios pedidos' } });
     }
@@ -154,10 +139,8 @@ app.get('/pedidos/:id', authMiddleware, async (req: Request, res: Response) => {
 
 app.patch('/pedidos/:id/status', authMiddleware, roleMiddleware(['COZINHA', 'GERENTE']), pedidoController.atualizarStatus);
 
-// Pagamento Mock
 app.post('/pagamentos/mock', authMiddleware, roleMiddleware(['GERENTE', 'ATENDENTE']), pedidoController.pagar);
 
-// Fidelidade
 app.get('/fidelidade/saldo', authMiddleware, async (req: Request, res: Response) => {
   try {
     const fidelidade = await prisma.fidelidade.findUnique({ where: { clienteId: req.user!.id } });
@@ -175,14 +158,10 @@ app.get('/fidelidade/saldo', authMiddleware, async (req: Request, res: Response)
   }
 });
 
-// ==================== ERROR HANDLER GLOBAL ====================
-// DEVE SER O ÚLTIMO MIDDLEWARE
 app.use(errorHandler);
 
-// ==================== INICIALIZAÇÃO ====================
 async function start() {
   try {
-    // Testa conexão com o banco
     await prisma.$connect();
     console.log('✅ Banco de dados conectado');
     
@@ -204,7 +183,6 @@ async function start() {
 
 start();
 
-// Graceful shutdown
 process.on('SIGINT', async () => {
   console.log('\n🔌 Encerrando aplicação...');
   await prisma.$disconnect();
