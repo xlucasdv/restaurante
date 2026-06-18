@@ -6,9 +6,14 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Iniciando seed...');
 
-  const senhaHash = await bcrypt.hash('123456', 10);
-  console.log('🔐 Hash de senha gerado com bcrypt');
+  // Gerar hashes DIFERENTES para cada usuário
+  const senhaCliente = await bcrypt.hash('123456', 10);
+  const senhaAtendente = await bcrypt.hash('643125', 10);
+  const senhaCozinha = await bcrypt.hash('134652', 10);
+  const senhaGerente = await bcrypt.hash('654321', 10);
+  console.log('🔐 Hashes de senha gerados com bcrypt');
 
+  // 1. Unidade
   const unidade = await prisma.unidade.upsert({
     where: { id: 'unidade-1' },
     update: {},
@@ -21,35 +26,36 @@ async function main() {
   });
   console.log('✅ Unidade criada:', unidade.nome);
 
-  const produtos = await prisma.produto.createMany({
-  data: [
-    { 
-      id: 'produto-1', 
-      unidadeId: unidade.id, 
-      nome: 'X-Burger', 
-      preco: 25.00,
-      descricao: 'Hambúrguer artesanal com queijo e salada',
-      categoria: 'LANCHE'
-    },
-    { 
-      id: 'produto-2', 
-      unidadeId: unidade.id, 
-      nome: 'Batata Frita', 
-      preco: 12.00,
-      descricao: 'Porção de batatas fritas crocantes',
-      categoria: 'ACOMPANHAMENTO'
-    },
-    { 
-      id: 'produto-3', 
-      unidadeId: unidade.id, 
-      nome: 'Refrigerante', 
-      preco: 6.00,
-      descricao: 'Lata 350ml',
-      categoria: 'BEBIDA'
-    }
-  ]
-});
-  console.log('✅ Produtos criados:', produtos.count);
+  // 2. Produtos com estoque
+  await prisma.produto.createMany({
+    data: [
+      { 
+        id: 'produto-1', 
+        unidadeId: unidade.id, 
+        nome: 'X-Burger', 
+        preco: 25.00,
+        descricao: 'Hambúrguer artesanal com queijo e salada',
+        categoria: 'LANCHE'
+      },
+      { 
+        id: 'produto-2', 
+        unidadeId: unidade.id, 
+        nome: 'Batata Frita', 
+        preco: 12.00,
+        descricao: 'Porção de batatas fritas crocantes',
+        categoria: 'ACOMPANHAMENTO'
+      },
+      { 
+        id: 'produto-3', 
+        unidadeId: unidade.id, 
+        nome: 'Refrigerante', 
+        preco: 6.00,
+        descricao: 'Lata 350ml',
+        categoria: 'BEBIDA'
+      }
+    ]
+  });
+  console.log('✅ Produtos criados');
 
   await prisma.estoque.createMany({
     data: [
@@ -60,14 +66,15 @@ async function main() {
   });
   console.log('✅ Estoque inicializado');
 
+  // 3. Usuários com senhas DIFERENTES
   const cliente = await prisma.usuario.upsert({
     where: { id: 'cliente-1' },
-    update: {},
+    update: { senhaHash: senhaCliente },
     create: {
       id: 'cliente-1',
       nome: 'Cliente Teste',
       email: 'cliente@teste.com',
-      senhaHash: senhaHash,
+      senhaHash: senhaCliente,
       perfil: 'CLIENTE',
       fidelidade: {
         create: { pontos: 150, consentimento: true }
@@ -78,12 +85,12 @@ async function main() {
 
   const atendente = await prisma.usuario.upsert({
     where: { id: 'atendente-1' },
-    update: {},
+    update: { senhaHash: senhaAtendente },
     create: {
       id: 'atendente-1',
       nome: 'Atendente Teste',
       email: 'atendente@teste.com',
-      senhaHash: senhaHash,
+      senhaHash: senhaAtendente,
       perfil: 'ATENDENTE'
     }
   });
@@ -91,12 +98,12 @@ async function main() {
 
   const cozinha = await prisma.usuario.upsert({
     where: { id: 'cozinha-1' },
-    update: {},
+    update: { senhaHash: senhaCozinha },
     create: {
       id: 'cozinha-1',
       nome: 'Cozinha Teste',
       email: 'cozinha@teste.com',
-      senhaHash: senhaHash,
+      senhaHash: senhaCozinha,
       perfil: 'COZINHA'
     }
   });
@@ -104,12 +111,12 @@ async function main() {
 
   const gerente = await prisma.usuario.upsert({
     where: { id: 'gerente-1' },
-    update: {},
+    update: { senhaHash: senhaGerente },
     create: {
       id: 'gerente-1',
       nome: 'Gerente Teste',
       email: 'gerente@teste.com',
-      senhaHash: senhaHash,
+      senhaHash: senhaGerente,
       perfil: 'GERENTE'
     }
   });
